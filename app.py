@@ -23,8 +23,8 @@ if not os.path.exists(docs_folder):
 
 pdf_files = [f for f in os.listdir(docs_folder) if f.endswith(".pdf")]
 
-groq_key = os.getenv("GROQ_API_KEY", "").strip()
-gemini_key = os.getenv("GEMINI_API_KEY", "").strip()
+groq_key = st.secrets.get("GROQ_API_KEY", os.getenv("GROQ_API_KEY", "")).strip()
+gemini_key = st.secrets.get("GEMINI_API_KEY", os.getenv("GEMINI_API_KEY", "")).strip()
 
 with st.sidebar:
     st.header("Knowledge Base")
