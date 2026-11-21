@@ -17,7 +17,33 @@ try:
 except ImportError:
     pass
 
-st.set_page_config(page_title="Assistant", page_icon="⛏️", layout="wide")
+st.set_page_config(
+    page_title="Assistant",
+    page_icon="⛏️",
+    layout="centered",
+    initial_sidebar_state="collapsed"
+)
+
+st.markdown("""
+<style>
+    .block-container {
+        max-width: 720px;
+        padding-top: 1.5rem;
+        padding-bottom: 5rem;
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+    @media (max-width: 640px) {
+        h1 {
+            font-size: 1.6rem !important;
+        }
+        .stChatMessage {
+            padding: 0.6rem !important;
+            font-size: 0.95rem !important;
+        }
+    }
+</style>
+""", unsafe_allow_html=True)
 st.title("AI Assistant")
 st.caption("Mining")
 
