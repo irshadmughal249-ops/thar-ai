@@ -146,7 +146,7 @@ if user_query:
             user_prompt = f"Manual Context:\n{context_text}\n\nUser Question: {user_query}"
             reply = None
 
-                # 1. Primary Engine: Groq (Auto-detects active model from your Groq account)
+            # 1. Primary Engine: Groq (Auto-detects active model from your Groq account)
                 if groq_key:
                     try:
                         groq_client = Groq(api_key=groq_key)
@@ -170,7 +170,7 @@ if user_query:
                         reply = chat_completion.choices[0].message.content
                     except Exception as e:
                         st.caption(f"Groq fallback triggered: {e}")
-                # 2. Secondary Engine: Google Gemini
+            # 2. Secondary Engine: Google Gemini
                 if not reply and gemini_key:
                     try:
                         gemini_client = genai.Client(
@@ -185,7 +185,7 @@ if user_query:
                     except Exception:
                         reply = None
 
-                # 3. Offline Clean Single-Q&A Fallback
+            # 3. Offline Clean Single-Q&A Fallback
                 if not reply:
                     src = os.path.basename(relevant_docs[0].metadata.get("source", "Unknown"))
                     pg = relevant_docs[0].metadata.get("page", 0) + 1
