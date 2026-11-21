@@ -17,9 +17,9 @@ try:
 except ImportError:
     pass
 
-st.set_page_config(page_title="THAR-AI | Safety Assistant", page_icon="⛏️", layout="wide")
-st.title("⛏️ THAR-AI | Safety & Operations Assistant")
-st.caption("Multilingual Mining & HSE Co-Pilot (English | Roman Urdu | اردو | سنڌي)")
+st.set_page_config(page_title="Assistant", page_icon="⛏️", layout="wide")
+st.title("AI Assistant")
+st.caption("Mining")
 
 docs_folder = os.path.join(BASE_DIR, "mining_docs")
 if not os.path.exists(docs_folder):
