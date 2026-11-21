@@ -143,7 +143,7 @@ if user_query:
                     "5. **Mandatory Citation:** Always end with the exact Document Name, Question Number, and Page Number from the context."
                 )
 
-                user_prompt = f"Manual Context:\n{context_text}\n\nUser Question: {user_query}"
+            user_prompt = f"Manual Context:\n{context_text}\n\nUser Question: {user_query}"
                 reply = None
 
                 # 1. Primary Engine: Groq (Auto-detects active model from your Groq account)
