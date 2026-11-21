@@ -144,7 +144,7 @@ if user_query:
                 )
 
             user_prompt = f"Manual Context:\n{context_text}\n\nUser Question: {user_query}"
-                reply = None
+            reply = None
 
                 # 1. Primary Engine: Groq (Auto-detects active model from your Groq account)
                 if groq_key:
