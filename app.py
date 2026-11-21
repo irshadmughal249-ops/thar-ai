@@ -1,11 +1,6 @@
 import os
 import re
 import streamlit as st
-try:
-    from dotenv import load_dotenv
-    load_dotenv(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env"))
-except ImportError:
-    pass
 from groq import Groq
 from google import genai
 from google.genai import types
@@ -15,7 +10,12 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-load_dotenv(os.path.join(BASE_DIR, ".env"))
+
+try:
+    from dotenv import load_dotenv
+    load_dotenv(os.path.join(BASE_DIR, ".env"))
+except ImportError:
+    pass
 
 st.set_page_config(page_title="THAR-AI | Safety Assistant", page_icon="⛏️", layout="wide")
 st.title("⛏️ THAR-AI | Safety & Operations Assistant")
@@ -25,10 +25,18 @@ docs_folder = os.path.join(BASE_DIR, "mining_docs")
 if not os.path.exists(docs_folder):
     os.makedirs(docs_folder)
 
-pdf_files = [f for f in os.listdir(docs_folder) if f.endswith(".pdf")]
+pdf_files = [f for f in os.listdir(docs_folder) if f.lower().endswith(".pdf")]
 
-groq_key = st.secrets.get("GROQ_API_KEY", os.getenv("GROQ_API_KEY", "")).strip()
-gemini_key = st.secrets.get("GEMINI_API_KEY", os.getenv("GEMINI_API_KEY", "")).strip()
+groq_key = ""
+gemini_key = ""
+try:
+    groq_key = st.secrets.get("GROQ_API_KEY", "")
+    gemini_key = st.secrets.get("GEMINI_API_KEY", "")
+except Exception:
+    pass
+
+groq_key = (groq_key or os.getenv("GROQ_API_KEY", "")).strip()
+gemini_key = (gemini_key or os.getenv("GEMINI_API_KEY", "")).strip()
 
 with st.sidebar:
     st.header("Knowledge Base")
@@ -37,8 +45,8 @@ with st.sidebar:
         st.markdown(f"- `{pdf}`")
     st.divider()
     st.subheader("AI Engine Status")
-    st.write(f"Groq API: {'✅ Connected' if groq_key else '❌ Missing in .env'}")
-    st.write(f"Gemini API: {'✅ Connected' if gemini_key else '❌ Missing in .env'}")
+    st.write(f"Groq API: {'✅ Connected' if groq_key else '❌ Missing Key'}")
+    st.write(f"Gemini API: {'✅ Connected' if gemini_key else '❌ Missing Key'}")
     if st.button("Rebuild Index"):
         st.cache_resource.clear()
         st.rerun()
@@ -64,7 +72,6 @@ def build_vector_store():
     return FAISS.from_documents(chunks, embeddings)
 
 def extract_single_qa(query, docs):
-    """Offline fallback: Manual mein se sirf mutaliqa EK sawal aur uska jawab nikalta hai"""
     full_text = "\n".join([d.page_content for d in docs])
     full_text = re.sub(r'500 Mining Engineering.*?Page \d+ of \d+', ' ', full_text)
     qa_blocks = re.split(r'(?=(?:^|\n|\s)\d{1,3}\.\s+[A-Z])', full_text)
@@ -122,7 +129,7 @@ if user_query:
             reply = "⚠️ Please add a readable PDF to the `mining_docs` folder and click **Rebuild Index**."
             st.warning(reply)
         else:
-            with st.spinner("Understanding your question & translating from manual..."):
+            with st.spinner("Searching manual & generating answer..."):
                 relevant_docs = vectorstore.similarity_search(user_query, k=5)
 
                 context_text = "\n\n---\n\n".join(
@@ -132,7 +139,7 @@ if user_query:
                     ]
                 )
 
-            system_instruction = (
+                system_instruction = (
                     "You are THAR-AI, a strict document-grounded Mining & HSE Operations Co-Pilot for SECMC Thar Block II.\n"
                     "You MUST answer ONLY using the exact facts, definitions, and numbers written inside the provided 'Manual Context' below.\n\n"
                     "STRICT ANTI-HALLUCINATION RULES:\n"
@@ -143,10 +150,9 @@ if user_query:
                     "5. **Mandatory Citation:** Always end with the exact Document Name, Question Number, and Page Number from the context."
                 )
 
-            user_prompt = f"Manual Context:\n{context_text}\n\nUser Question: {user_query}"
-            reply = None
+                user_prompt = f"Manual Context:\n{context_text}\n\nUser Question: {user_query}"
+                reply = None
 
-            # 1. Primary Engine: Groq (Auto-detects active model from your Groq account)
                 if groq_key:
                     try:
                         groq_client = Groq(api_key=groq_key)
@@ -154,7 +160,6 @@ if user_query:
                             m.id for m in groq_client.models.list().data
                             if "whisper" not in m.id and "guard" not in m.id and "tts" not in m.id
                         ]
-                        # Best available chat model pick karein
                         preferred = [m for m in available_models if "70b" in m or "llama-3" in m or "llama-4" in m or "qwen" in m]
                         selected_model = preferred[0] if preferred else available_models[0]
 
@@ -170,7 +175,7 @@ if user_query:
                         reply = chat_completion.choices[0].message.content
                     except Exception as e:
                         st.caption(f"Groq fallback triggered: {e}")
-            # 2. Secondary Engine: Google Gemini
+
                 if not reply and gemini_key:
                     try:
                         gemini_client = genai.Client(
@@ -185,7 +190,6 @@ if user_query:
                     except Exception:
                         reply = None
 
-            # 3. Offline Clean Single-Q&A Fallback
                 if not reply:
                     src = os.path.basename(relevant_docs[0].metadata.get("source", "Unknown"))
                     pg = relevant_docs[0].metadata.get("page", 0) + 1
