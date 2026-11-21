@@ -117,7 +117,7 @@ for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
 
-user_query = st.chat_input("Ask any mining or HSE question (English / Roman Urdu / اردو / سنڌي)...")
+user_query = st.chat_input("Ask me anything about Mining")
 
 if user_query:
     st.session_state.messages.append({"role": "user", "content": user_query})
