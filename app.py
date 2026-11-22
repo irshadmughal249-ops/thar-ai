@@ -1,5 +1,6 @@
 import os
 import re
+import base64
 import streamlit as st
 from groq import Groq
 from google import genai
