@@ -24,40 +24,47 @@ st.set_page_config(
     layout="centered",
     initial_sidebar_state="collapsed"
 )
+def set_mining_background():
+    img_path = os.path.join(BASE_DIR, "mining_bg.jpg")
 
-def set_mining_background(image_file):
-    img_path = os.path.join(BASE_DIR, image_file)
-    bg_layer = 'background-color: #0F172A;'
     if os.path.exists(img_path):
         with open(img_path, "rb") as f:
             encoded = base64.b64encode(f.read()).decode()
-        bg_layer = f'''
-            background-image: linear-gradient(rgba(10, 15, 28, 0.78), rgba(10, 15, 28, 0.86)),
-                              url("data:image/jpeg;base64,{encoded}");
-            background-size: cover;
-            background-position: center;
-            background-attachment: fixed;
+        bg_style = f'''
+            background-image: linear-gradient(rgba(10, 15, 28, 0.55), rgba(10, 15, 28, 0.72)),
+                              url("data:image/jpeg;base64,{encoded}") !important;
+            background-size: cover !important;
+            background-position: center center !important;
+            background-repeat: no-repeat !important;
+            background-attachment: fixed !important;
         '''
+    else:
+        bg_style = "background-color: #0F172A !important;"
     st.markdown(f"""
     <style>
-        .stApp {{
-            {bg_layer}
+        .stApp, [data-testid="stAppViewContainer"] {{
+            {bg_style}
+        }}
+        [data-testid="stHeader"], [data-testid="stBottom"], [data-testid="stMain"], .main {{
+            background: transparent !important;
+            background-color: transparent !important;
         }}
         .block-container {{
             max-width: 720px;
-            padding-top: 1.5rem;
+            padding-top: 2rem;
             padding-bottom: 5rem;
             padding-left: 1rem;
             padding-right: 1rem;
         }}
         h1, .stCaption, p, li, label {{
             color: #F8FAFC !important;
+            text-shadow: 0 1px 4px rgba(0,0,0,0.8);
         }}
         .stChatMessage {{
             background-color: rgba(15, 23, 42, 0.88) !important;
-            border: 1px solid rgba(245, 158, 11, 0.45) !important;
+            border: 1px solid rgba(245, 158, 11, 0.55) !important;
             border-radius: 12px !important;
-            padding: 0.8rem !important;
+            padding: 0.85rem !important;
         }}
         @media (max-width: 640px) {{
             h1 {{ font-size: 1.6rem !important; }}
@@ -66,7 +73,9 @@ def set_mining_background(image_file):
     </style>
     """, unsafe_allow_html=True)
 
-set_mining_background("mining_bg.jpg")
+set_mining_background()
+st.title("⛏️ THAR-AI | Mining Assistant")
+st.caption("Ask any question from the Mining & HSE Knowledge Base")
 
 docs_folder = os.path.join(BASE_DIR, "mining_docs")
 if not os.path.exists(docs_folder):
