@@ -25,27 +25,32 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 def set_mining_background():
-    img_path = os.path.join(BASE_DIR, "mining_bg.jpg")
-
-    if os.path.exists(img_path):
-        with open(img_path, "rb") as f:
-            encoded = base64.b64encode(f.read()).decode()
-        bg_style = f'''
-            background-image: linear-gradient(rgba(10, 15, 28, 0.55), rgba(10, 15, 28, 0.72)),
-                              url("data:image/jpeg;base64,{encoded}") !important;
-            background-size: cover !important;
-            background-position: center center !important;
-            background-repeat: no-repeat !important;
-            background-attachment: fixed !important;
-        '''
-    else:
-        bg_style = "background-color: #0F172A !important;"
+    bg_url = "https://raw.githubusercontent.com/irshadmughal249-ops/thar-ai/main/mining_bg.jpg"
     st.markdown(f"""
     <style>
-        .stApp, [data-testid="stAppViewContainer"] {{
-            {bg_style}
+        .stApp {{
+            background: transparent !important;
         }}
-        [data-testid="stHeader"], [data-testid="stBottom"], [data-testid="stMain"], .main {{
+        .stApp::before {{
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-image: linear-gradient(rgba(10, 15, 28, 0.58), rgba(10, 15, 28, 0.75)),
+                              url("{bg_url}");
+            background-size: cover;
+            background-position: center center;
+            background-repeat: no-repeat;
+            z-index: -1;
+        }}
+        [data-testid="stAppViewContainer"],
+        [data-testid="stAppViewContainer"] > .main,
+        [data-testid="stMain"],
+        [data-testid="stHeader"],
+        [data-testid="stBottom"],
+        [data-testid="stBottom"] > div {{
             background: transparent !important;
             background-color: transparent !important;
         }}
@@ -58,7 +63,7 @@ def set_mining_background():
         }}
         h1, .stCaption, p, li, label {{
             color: #F8FAFC !important;
-            text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+            text-shadow: 0 1px 4px rgba(0, 0, 0, 0.85);
         }}
         .stChatMessage {{
             background-color: rgba(15, 23, 42, 0.88) !important;
