@@ -25,13 +25,18 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 def set_mining_background():
-    bg_url = "https://raw.githubusercontent.com/irshadmughal249-ops/thar-ai/main/mining_bg.jpg"
+    img_path = os.path.join(BASE_DIR, "mining_bg.jpg")
+    if os.path.exists(img_path):
+        with open(img_path, "rb") as f:
+            encoded = base64.b64encode(f.read()).decode()
+        bg_css = f'background: linear-gradient(rgba(10, 15, 28, 0.50), rgba(10, 15, 28, 0.68)), url("data:image/jpeg;base64,{encoded}") no-repeat center center fixed !important; background-size: cover !important;'
+    else:
+        bg_css = 'background-color: #0F172A !important;'
+
     st.html(f"""
     <style>
         html, body, .stApp, [data-testid="stAppViewContainer"], [data-testid="stMain"] {{
-            background: linear-gradient(rgba(10, 15, 28, 0.55), rgba(10, 15, 28, 0.72)),
-                        url("{bg_url}") no-repeat center center fixed !important;
-            background-size: cover !important;
+            {bg_css}
         }}
         [data-testid="stHeader"], [data-testid="stBottom"], [data-testid="stBottom"] > div {{
             background: transparent !important;
