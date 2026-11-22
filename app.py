@@ -19,34 +19,51 @@ except ImportError:
     pass
 
 st.set_page_config(
-    page_title="Assistant",
+    page_title="AI Assistant | Mining",
     page_icon="⛏️",
     layout="centered",
     initial_sidebar_state="collapsed"
 )
 
-st.markdown("""
-<style>
-    .block-container {
-        max-width: 720px;
-        padding-top: 1.5rem;
-        padding-bottom: 5rem;
-        padding-left: 1rem;
-        padding-right: 1rem;
-    }
-    @media (max-width: 640px) {
-        h1 {
-            font-size: 1.6rem !important;
-        }
-        .stChatMessage {
-            padding: 0.6rem !important;
-            font-size: 0.95rem !important;
-        }
-    }
-</style>
-""", unsafe_allow_html=True)
-st.title("AI Assistant")
-st.caption("Mining")
+def set_mining_background(image_file):
+    img_path = os.path.join(BASE_DIR, image_file)
+    if os.path.exists(img_path):
+        with open(img_path, "rb") as f:
+            encoded = base64.b64encode(f.read()).decode()
+        bg_css = f"""
+        <style>
+            .stApp {{
+                background-image: linear-gradient(rgba(10, 15, 28, 0.82), rgba(10, 15, 28, 0.90)),
+                                  url("data:image/jpeg;base64,{encoded}");
+                background-size: cover;
+                background-position: center;
+                background-attachment: fixed;
+            }}
+            .block-container {{
+                max-width: 720px;
+                padding-top: 1.5rem;
+                padding-bottom: 5rem;
+                padding-left: 1rem;
+                padding-right: 1rem;
+            }}
+            h1, .stCaption, p, li, label, .stMarkdown {{
+                color: #F8FAFC !important;
+            }}
+            .stChatMessage {{
+                background-color: rgba(15, 23, 42, 0.88) !important;
+                border: 1px solid rgba(245, 158, 11, 0.45) !important;
+                border-radius: 12px !important;
+                padding: 0.8rem !important;
+            }}
+            @media (max-width: 640px) {{
+                h1 {{ font-size: 1.6rem !important; }}
+                .stChatMessage {{ font-size: 0.95rem !important; }}
+            }}
+        </style>
+        """
+        st.markdown(bg_css, unsafe_allow_html=True)
+
+set_mining_background("mining_bg.jpg")
 
 docs_folder = os.path.join(BASE_DIR, "mining_docs")
 if not os.path.exists(docs_folder):
