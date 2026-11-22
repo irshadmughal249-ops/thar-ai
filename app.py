@@ -26,33 +26,15 @@ st.set_page_config(
 )
 def set_mining_background():
     bg_url = "https://raw.githubusercontent.com/irshadmughal249-ops/thar-ai/main/mining_bg.jpg"
-    st.markdown(f"""
+    st.html(f"""
     <style>
-        .stApp {{
-            background: transparent !important;
+        html, body, .stApp, [data-testid="stAppViewContainer"], [data-testid="stMain"] {{
+            background: linear-gradient(rgba(10, 15, 28, 0.55), rgba(10, 15, 28, 0.72)),
+                        url("{bg_url}") no-repeat center center fixed !important;
+            background-size: cover !important;
         }}
-        .stApp::before {{
-            content: "";
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background-image: linear-gradient(rgba(10, 15, 28, 0.58), rgba(10, 15, 28, 0.75)),
-                              url("{bg_url}");
-            background-size: cover;
-            background-position: center center;
-            background-repeat: no-repeat;
-            z-index: -1;
-        }}
-        [data-testid="stAppViewContainer"],
-        [data-testid="stAppViewContainer"] > .main,
-        [data-testid="stMain"],
-        [data-testid="stHeader"],
-        [data-testid="stBottom"],
-        [data-testid="stBottom"] > div {{
+        [data-testid="stHeader"], [data-testid="stBottom"], [data-testid="stBottom"] > div {{
             background: transparent !important;
-            background-color: transparent !important;
         }}
         .block-container {{
             max-width: 720px;
@@ -76,7 +58,7 @@ def set_mining_background():
             .stChatMessage {{ font-size: 0.95rem !important; }}
         }}
     </style>
-    """, unsafe_allow_html=True)
+    """)
 
 set_mining_background()
 st.title("⛏️ THAR-AI | Mining Assistant")
