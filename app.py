@@ -192,7 +192,7 @@ if user_query:
                     "You MUST answer ONLY using the exact facts, definitions, and numbers written inside the provided 'Manual Context' below.\n\n"
                     "STRICT ANTI-HALLUCINATION RULES:\n"
                     "1. **ONLY Use Manual Context:** Do NOT use your outside/general AI knowledge. Every single point in your answer must come directly from the provided Manual Context.\n"
-                    "2. **If Not Found in PDF:** If the user's question is NOT answered in the Manual Context, say clearly in the user's language: 'Yeh maloomat uploaded manual/PDF mein mojood nahi hai' (do NOT guess or make up an answer).\n"
+                    "2. **If Not Found in PDF:** If the user's question is NOT answered in the Manual Context, say clearly in the user's language: 'I don't know about it.' (do NOT guess or make up an answer).\n"
                     "3. **Extract Single Relevant Q&A:** Ignore unrelated numbered questions in the chunk and translate/explain ONLY the specific Q&A that matches the user's query.\n"
                     "4. **Language Match:** Reply in the exact language the user asked in (Roman Urdu, Urdu, Sindhi, or English), keeping key technical terms clear.\n"
                     "5. **Mandatory Citation:** Always end with the exact Document Name, Question Number, and Page Number from the context."
