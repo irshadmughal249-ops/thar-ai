@@ -89,21 +89,13 @@ if "messages" not in st.session_state:
 
 with st.sidebar:
     st.header("📂 Knowledge Base")
-    uploaded_files = st.file_uploader("Upload PDF manuals", type=["pdf"], accept_multiple_files=True)
-    if uploaded_files:
-        for up_file in uploaded_files:
-            with open(os.path.join(DOCS_FOLDER, up_file.name), "wb") as f:
-                f.write(up_file.getbuffer())
-        st.cache_resource.clear()
-        st.success("PDF(s) indexed!")
-
     pdf_files = [f for f in os.listdir(DOCS_FOLDER) if f.lower().endswith(".pdf")]
     st.write(f"Loaded Manuals: **{len(pdf_files)}**")
     for pdf in pdf_files:
         st.markdown(f"- `{pdf}`")
 
-    st.divider()
     if st.session_state.messages:
+        st.divider()
         chat_export = "\n\n".join(
             [f"[{m['role'].upper()}]:\n{m['content']}" for m in st.session_state.messages]
         )
@@ -114,9 +106,6 @@ with st.sidebar:
             mime="text/plain",
             use_container_width=True
         )
-    if st.button("🔄 Rebuild Index", use_container_width=True):
-        st.cache_resource.clear()
-        st.rerun()
 
 @st.cache_resource
 def load_embeddings():
@@ -152,15 +141,17 @@ def get_groq_client_and_model():
 
 def rewrite_query_with_history(client, model, raw_query, history):
     if not history:
-        return raw_query, False
-    recent = "\n".join([f"{m['role'].upper()}: {m['content'][:400]}" for m in history[-4:]])
+        return raw_query, False, False
+    recent = "\n".join([f"{m['role'].upper()}: {m['content'][:600]}" for m in history[-4:]])
     prompt = (
-        "Given the recent chat history and the user's latest message, rewrite the user's message into a standalone search query "
-        "that preserves the exact mining topic being discussed.\n"
-        "Also classify if the user wants a DETAILED/EXPANDED response (yes/no).\n"
-        "Respond strictly in 2 lines:\n"
+        "Analyze the recent chat history and the user's latest message.\n"
+        "1. If the user asks to reformat, make it more attractive/clearer, continue an incomplete sentence (like 'including?'), or summarize the previous answer without introducing a new topic, set REFORMAT_PREVIOUS: yes and set QUERY to the main mining topic of the previous assistant answer.\n"
+        "2. Otherwise, rewrite the user's message into a standalone mining search query.\n"
+        "3. Set DETAILED: yes if the user asks for details, continuation, or attractive structured formatting.\n\n"
+        "Respond strictly in 3 lines:\n"
         "QUERY: <standalone search query>\n"
-        "DETAILED: <yes or no>\n\n"
+        "DETAILED: <yes or no>\n"
+        "REFORMAT_PREVIOUS: <yes or no>\n\n"
         f"Recent Chat:\n{recent}\n\nLatest Message: {raw_query}"
     )
     try:
@@ -168,16 +159,20 @@ def rewrite_query_with_history(client, model, raw_query, history):
             messages=[{"role": "user", "content": prompt}],
             model=model,
             temperature=0.0,
-            max_tokens=100
+            max_tokens=120
         )
         out = res.choices[0].message.content
         q_match = re.search(r"QUERY:\s*(.+)", out)
         d_match = re.search(r"DETAILED:\s*(yes|no)", out, re.I)
+        r_match = re.search(r"REFORMAT_PREVIOUS:\s*(yes|no)", out, re.I)
         rewritten = q_match.group(1).strip() if q_match else raw_query
         is_detailed = (d_match.group(1).lower() == "yes") if d_match else False
-        return rewritten, is_detailed
+        is_reformat = (r_match.group(1).lower() == "yes") if r_match else False
+        return rewritten, is_detailed, is_reformat
     except Exception:
-        return raw_query, any(w in raw_query.lower() for w in ["detail", "detailed", "explain", "more", "elaborate", "tafseel"])
+        low = raw_query.lower()
+        is_ref = any(w in low for w in ["attractive", "format", "including", "continue", "complete", "summarize", "short", "chota"])
+        return raw_query, True, is_ref
 
 def hybrid_retrieve(query, k=6):
     sem_results = vectorstore.similarity_search_with_score(query, k=k)
@@ -250,7 +245,7 @@ if user_query:
 
     with st.chat_message("assistant"):
         if vectorstore is None:
-            reply = "⚠️ No PDF manual loaded. Open the top-left sidebar (`>>`) to upload a PDF."
+            reply = "⚠️ No PDF manual found in mining_docs."
             st.warning(reply)
         elif not groq_key:
             reply = "⚠️ GROQ_API_KEY is missing in Streamlit Secrets."
@@ -258,10 +253,10 @@ if user_query:
         else:
             try:
                 client, selected_model = get_groq_client_and_model()
-                standalone_query, wants_detail = rewrite_query_with_history(
+                standalone_query, wants_detail, is_reformat = rewrite_query_with_history(
                     client, selected_model, user_query, st.session_state.messages[:-1]
                 )
-                if any(w in user_query.lower() for w in ["detail", "detailed", "explain", "more", "elaborate", "tafseel"]):
+                if any(w in user_query.lower() for w in ["detail", "detailed", "explain", "more", "elaborate", "tafseel", "attractive", "including", "continue"]):
                     wants_detail = True
 
                 context_text, sources = hybrid_retrieve(standalone_query, k=6 if wants_detail else 4)
@@ -273,20 +268,21 @@ if user_query:
                     reply = "I don't know about it."
                     st.markdown(reply)
                 else:
-                    detail_rule = (
-                        "Provide a comprehensive, well-structured, in-depth technical explanation using all relevant details from the PDF Context."
-                        if wants_detail else
-                        "Keep the answer concise, direct, and to-the-point (3-5 lines or crisp bullet points)."
+                    style_rule = (
+                        "Present the answer in an attractive, clean, well-organized format using bold headings, crisp bullet points, and complete sentences. NEVER stop mid-sentence or end with a trailing colon like 'including:'."
+                        if (wants_detail or is_reformat) else
+                        "Keep the answer concise, direct, and complete (3-5 full lines or crisp bullet points). NEVER cut off mid-sentence."
                     )
                     sys_prompt = (
                         "You are THAR-AI, an expert Mining Engineering & HSE Knowledge Assistant.\n"
                         "STRICT RULES:\n"
                         "1. Base your answer strictly on the provided PDF Context and Recent Chat History.\n"
-                        "2. NEVER fabricate or bring external facts not supported by the PDF Context or Recent Chat History.\n"
+                        "2. NEVER invent external facts not supported by the PDF Context or Recent Chat History.\n"
                         "3. If the requested topic is completely absent from both the PDF Context and Recent Chat History, reply ONLY with: I don't know about it.\n"
-                        f"4. {detail_rule}\n"
-                        "5. Match the user's language (English, Roman Urdu, Urdu, or Sindhi) while keeping mining technical terms accurate.\n"
-                        "6. Always cite the exact Source file and Page number(s) at the end."
+                        "4. If the user asks to make the previous answer 'more attractive', complete a cut-off line (like 'including?'), or reformat it, rewrite and complete the previous answer cleanly using the PDF Context.\n"
+                        f"5. {style_rule}\n"
+                        "6. Match the user's language (English, Roman Urdu, Urdu, or Sindhi) while keeping mining technical terms accurate.\n"
+                        "7. Always cite the exact Source file and Page number(s) at the end."
                     )
 
                     res = client.chat.completions.create(
@@ -304,7 +300,7 @@ if user_query:
                         ],
                         model=selected_model,
                         temperature=0.0,
-                        max_tokens=1100 if wants_detail else 500
+                        max_tokens=1500 if wants_detail else 900
                     )
                     reply = res.choices[0].message.content.strip()
                     if not reply:
