@@ -128,13 +128,16 @@ if user_query:
             reply = "⚠️ No PDF file loaded. Please upload a PDF from the sidebar."
             st.warning(reply)
         else:
-            follow_up_words = {"summarize", "summary", "short", "shorten", "chota", "mukhtasar", "brief", "bullet", "points", "explain", "isay", "isko"}
+            follow_up_words = {
+                "summarize", "summary", "short", "shorten", "chota", "mukhtasar",
+                "brief", "bullet", "points", "explain", "isay", "isko", "merge",
+                "combine", "both", "previous", "above"
+            }
             query_tokens = set(re.findall(r'\w+', user_query.lower()))
-            is_followup = len(st.session_state.messages) >= 2 and bool(query_tokens & follow_up_words) and len(query_tokens) <= 7
+            is_followup = len(st.session_state.messages) >= 2 and bool(query_tokens & follow_up_words) and len(query_tokens) <= 10
 
             if is_followup:
-                last_bot_reply = st.session_state.messages[-2]["content"]
-                context_text = f"Previous Answer to refine:\n{last_bot_reply}"
+                context_text = "Refer to Recent Chat History below."
             else:
                 results = vectorstore.similarity_search_with_score(user_query, k=4)
                 stop_words = {"what", "is", "are", "a", "an", "the", "of", "in", "for", "to", "how", "why", "define", "explain", "tell", "me", "about", "kia", "kya", "ha", "hai", "btao"}
@@ -151,7 +154,7 @@ if user_query:
             if not context_text:
                 reply = "I don't know about it."
                 st.markdown(reply)
-           elif groq_key:
+            elif groq_key:
                 try:
                     client = Groq(api_key=groq_key)
                     models = [
