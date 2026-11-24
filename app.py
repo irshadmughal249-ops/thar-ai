@@ -151,25 +151,35 @@ if user_query:
             if not context_text:
                 reply = "I don't know about it."
                 st.markdown(reply)
-            elif groq_key:
+           elif groq_key:
                 try:
                     client = Groq(api_key=groq_key)
-                    models = [m.id for m in client.models.list().data if "whisper" not in m.id and "guard" not in m.id and "tts" not in m.id]
-                    selected = next((m for m in models if "70b" in m or "llama-3" in m), models[0])
+                    models = [
+                        m.id for m in client.models.list().data
+                        if not any(x in m.id.lower() for x in ["whisper", "guard", "tts", "orpheus", "playai", "distil"])
+                    ]
+                    selected = "llama-3.3-70b-versatile" if "llama-3.3-70b-versatile" in models else (
+                        next((m for m in models if "70b" in m or "llama-3" in m), models[0])
+                    )
 
                     sys_prompt = (
                         "You are a strict PDF-locked Mining Assistant.\n"
                         "RULES:\n"
-                        "1. Answer ONLY using the provided PDF Context (or Previous Answer if the user asks to shorten/summarize it).\n"
-                        "2. NEVER use outside knowledge. If the answer is not in the context, reply ONLY with: I don't know about it.\n"
-                        "3. Keep answers concise, direct, and to-the-point (3-5 lines or crisp bullet points) unless the user asks for full detail. Do NOT dump long raw paragraphs.\n"
-                        "4. If the user asks to shorten, summarize, or make points of the previous answer, concisely summarize ONLY that previous answer.\n"
-                        "5. End with the exact Source file and Page number."
+                        "1. Answer ONLY using the provided PDF Context and the Recent Chat History.\n"
+                        "2. NEVER use outside knowledge. If the answer is not in the context or chat history, reply ONLY with: I don't know about it.\n"
+                        "3. Keep answers concise, direct, and to-the-point (3-5 lines or crisp bullet points) unless asked for detail.\n"
+                        "4. If the user asks to summarize, shorten, or merge previous answers, combine/summarize ONLY from the Recent Chat History.\n"
+                        "5. End with the exact Source file and Page number when referencing PDF content."
                     )
+
+                    recent_history = "\n".join(
+                        [f"{m['role'].upper()}: {m['content']}" for m in st.session_state.messages[-6:-1]]
+                    )
+
                     res = client.chat.completions.create(
                         messages=[
                             {"role": "system", "content": sys_prompt},
-                            {"role": "user", "content": f"Context:\n{context_text}\n\nUser Request: {user_query}"}
+                            {"role": "user", "content": f"Recent Chat History:\n{recent_history}\n\nPDF Context:\n{context_text}\n\nUser Request: {user_query}"}
                         ],
                         model=selected,
                         temperature=0.0,
