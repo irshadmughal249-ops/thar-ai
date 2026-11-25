@@ -128,6 +128,31 @@ def build_vector_store(file_list):
 store_data = build_vector_store(tuple(sorted(pdf_files)))
 vectorstore, all_chunks = store_data if store_data else (None, [])
 
+def check_greeting_or_smalltalk(text):
+    clean = re.sub(r'[^\w\s]', '', text.lower()).strip()
+    words = clean.split()
+    if not words or len(words) > 7:
+        return None
+
+    salam_patterns = ["assalam", "asalam", "salam", "aoa", "assalamu"]
+    if any(any(w.startswith(p) for p in salam_patterns) for w in words):
+        return "Walaikum Assalam! 👋 Main **THAR-AI** hoon, aapka Mining Engineering & HSE Knowledge Assistant. Mining manuals ya safety se mutalliq koi bhi sawaal poochein!"
+
+    hi_words = {"hi", "hello", "hey", "hlo", "hy", "greetings", "morning", "evening", "afternoon"}
+    if words[0] in hi_words or (len(words) <= 3 and any(w in hi_words for w in words)):
+        return "Hello! 👋 Welcome to **THAR-AI** (Mining & HSE Knowledge Assistant). How can I help you with your mining manuals today?"
+
+    if any(p in clean for p in ["how are you", "kya haal", "kia hal", "kesy ho", "kaise ho"]):
+        return "Alhamdulillah, main bilkul theek hoon! Aap batayein, mining engineering ya HSE ke kis topic par maloomat chahiye?"
+
+    if any(p in clean for p in ["thank you", "thanks", "shukriya", "thx", "jazakallah"]):
+        return "You're welcome! Agar kisi aur mining topic par madad chahiye ho to zaroor poochein. ⛏️"
+
+    if any(p in clean for p in ["who are you", "what are you", "tum kon ho", "ap kon ho", "introduce yourself"]):
+        return "Main **THAR-AI** hoon — ek specialized Mining Engineering & HSE Assistant jo aapke uploaded mining manuals se exact, verified answers faraham karta hai."
+
+    return None
+
 def get_groq_client_and_model():
     client = Groq(api_key=groq_key)
     models = [
@@ -244,7 +269,11 @@ if user_query:
         st.markdown(user_query)
 
     with st.chat_message("assistant"):
-        if vectorstore is None:
+        greeting_reply = check_greeting_or_smalltalk(user_query)
+        if greeting_reply:
+            reply = greeting_reply
+            st.markdown(reply)
+        elif vectorstore is None:
             reply = "⚠️ No PDF manual found in mining_docs."
             st.warning(reply)
         elif not groq_key:
